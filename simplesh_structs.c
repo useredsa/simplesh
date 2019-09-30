@@ -1,6 +1,8 @@
+
 /*
  * Ficheros de cabecera
  */
+
 
 #define _POSIX_C_SOURCE 200809L /* IEEE 1003.1-2008 (véase /usr/include/features.h) */
 //#define NDEBUG                /* Traduce asertos y DMACROS a 'no ops' */
@@ -20,9 +22,11 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+
 /******************************************************************************
  * Constantes, macros y variables globales
  ******************************************************************************/
+
 
 static const char* VERSION = "0.19";
 
@@ -66,14 +70,17 @@ static int g_dbg_level = 0;
 // Número máximo de argumentos de un comando
 #define MAX_ARGS 16
 
+
 // Delimitadores
 static const char WHITESPACE[] = " \t\r\n\v";
 // Caracteres especiales
 static const char SYMBOLS[] = "<|>&;()";
 
+
 /******************************************************************************
  * Funciones auxiliares
  ******************************************************************************/
+
 
 // Imprime el mensaje
 void info(const char *fmt, ...)
@@ -86,6 +93,7 @@ void info(const char *fmt, ...)
     va_end(arg);
 }
 
+
 // Imprime el mensaje de error
 void error(const char *fmt, ...)
 {
@@ -96,6 +104,7 @@ void error(const char *fmt, ...)
     vfprintf(stderr, fmt, arg);
     va_end(arg);
 }
+
 
 // Imprime el mensaje de error y aborta la ejecución
 void panic(const char *fmt, ...)
@@ -110,6 +119,7 @@ void panic(const char *fmt, ...)
     exit(EXIT_FAILURE);
 }
 
+
 // `fork()` que muestra un mensaje de error si no se puede crear el hijo
 int fork_or_panic(const char* s)
 {
@@ -121,9 +131,11 @@ int fork_or_panic(const char* s)
     return pid;
 }
 
+
 /******************************************************************************
  * Estructuras de datos `cmd`
  ******************************************************************************/
+
 
 // Las estructuras `cmd` se utilizan para almacenar información que servirá a
 // simplesh para ejecutar líneas de órdenes con redirecciones, tuberías, listas
@@ -189,9 +201,11 @@ struct subscmd {
     struct cmd* cmd;
 };
 
+
 /******************************************************************************
  * Funciones para construir las estructuras de datos `cmd`
  ******************************************************************************/
+
 
 // Construye una estructura `cmd` de tipo `EXEC`
 struct cmd* execcmd(void)

@@ -1,8 +1,10 @@
+
 #include "simplesh_structs.c"
 
 /******************************************************************************
  * Funciones para realizar el análisis sintáctico de la línea de órdenes
  ******************************************************************************/
+
 
 // `get_token` recibe un puntero al principio de una cadena (`start_of_str`),
 // otro puntero al final de esa cadena (`end_of_str`) y, opcionalmente, dos
@@ -85,6 +87,7 @@ int get_token(char** start_of_str, char const* end_of_str,
     return ret;
 }
 
+
 // `peek` recibe un puntero al principio de una cadena (`start_of_str`), otro
 // puntero al final de esa cadena (`end_of_str`) y un conjunto de caracteres
 // (`delimiter`).
@@ -107,6 +110,7 @@ int peek(char** start_of_str, char const* end_of_str, char* delimiter)
     return *s && strchr(delimiter, *s);
 }
 
+
 // Definiciones adelantadas de funciones
 struct cmd* parse_line(char**, char*);
 struct cmd* parse_pipe(char**, char*);
@@ -114,6 +118,7 @@ struct cmd* parse_exec(char**, char*);
 struct cmd* parse_subs(char**, char*);
 struct cmd* parse_redr(struct cmd*, char**, char*);
 struct cmd* null_terminate(struct cmd*);
+
 
 // `parse_cmd` realiza el *análisis sintáctico* de la línea de órdenes
 // introducida por el usuario.
@@ -140,6 +145,7 @@ struct cmd* parse_cmd(char* start_of_str)
 
     return cmd;
 }
+
 
 // `parse_line` realiza el análisis sintáctico de la línea de órdenes
 // introducida por el usuario.
@@ -183,6 +189,7 @@ struct cmd* parse_line(char** start_of_str, char* end_of_str)
     return cmd;
 }
 
+
 // `parse_pipe` realiza el análisis sintáctico de una tubería de manera
 // recursiva si encuentra el delimitador de tuberías '|'.
 //
@@ -211,6 +218,7 @@ struct cmd* parse_pipe(char** start_of_str, char* end_of_str)
 
     return cmd;
 }
+
 
 // `parse_exec` realiza el análisis sintáctico de un comando a no ser que la
 // expresión comience por un paréntesis, en cuyo caso se llama a `parse_subs`.
@@ -270,6 +278,7 @@ struct cmd* parse_exec(char** start_of_str, char* end_of_str)
     return ret;
 }
 
+
 // `parse_subs` realiza el análisis sintáctico de un bloque de órdenes
 // delimitadas por paréntesis o `subshell` llamando a `parse_line`.
 //
@@ -304,6 +313,7 @@ struct cmd* parse_subs(char** start_of_str, char* end_of_str)
 
     return cmd;
 }
+
 
 // `parse_redr` realiza el análisis sintáctico de órdenes con
 // redirecciones si encuentra alguno de los delimitadores de
@@ -345,6 +355,7 @@ struct cmd* parse_redr(struct cmd* cmd, char** start_of_str, char* end_of_str)
 
     return cmd;
 }
+
 
 // Termina en NULL todas las cadenas de las estructuras `cmd`
 struct cmd* null_terminate(struct cmd* cmd)
@@ -403,3 +414,28 @@ struct cmd* null_terminate(struct cmd* cmd)
 
     return cmd;
 }
+
+/******************************************************************************
+ * Lectura de la línea de órdenes con la biblioteca libreadline
+ ******************************************************************************/
+
+
+// `get_cmd` muestra un *prompt* y lee lo que el usuario escribe usando la
+// biblioteca readline. Ésta permite mantener el historial, utilizar las flechas
+// para acceder a las órdenes previas del historial, búsquedas de órdenes, etc.
+
+char* get_cmd()
+{
+    char* buf;
+
+    // Lee la orden tecleada por el usuario
+    buf = readline("simplesh> ");
+
+    // Si el usuario ha escrito una orden, almacenarla en la historia.
+    if(buf)
+        add_history(buf);
+
+    return buf;
+}
+
+

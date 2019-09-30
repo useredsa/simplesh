@@ -1,8 +1,10 @@
+
 #include "simplesh_syntactic.c"
 
 /******************************************************************************
  * Funciones para la ejecución de la línea de órdenes
  ******************************************************************************/
+
 
 void exec_cmd(struct execcmd* ecmd)
 {
@@ -14,6 +16,7 @@ void exec_cmd(struct execcmd* ecmd)
 
     panic("no se encontró el comando '%s'\n", ecmd->argv[0]);
 }
+
 
 void run_cmd(struct cmd* cmd)
 {
@@ -138,6 +141,7 @@ void run_cmd(struct cmd* cmd)
     DPRINTF(DBG_TRACE, "END\n");
 }
 
+
 void print_cmd(struct cmd* cmd)
 {
     struct execcmd* ecmd;
@@ -212,6 +216,7 @@ void print_cmd(struct cmd* cmd)
     }
 }
 
+
 void free_cmd(struct cmd* cmd)
 {
     struct execcmd* ecmd;
@@ -277,25 +282,5 @@ void free_cmd(struct cmd* cmd)
     }
 }
 
-/******************************************************************************
- * Lectura de la línea de órdenes con la biblioteca libreadline
- ******************************************************************************/
 
-// `get_cmd` muestra un *prompt* y lee lo que el usuario escribe usando la
-// biblioteca readline. Ésta permite mantener el historial, utilizar las flechas
-// para acceder a las órdenes previas del historial, búsquedas de órdenes, etc.
-
-char* get_cmd()
-{
-    char* buf;
-
-    // Lee la orden tecleada por el usuario
-    buf = readline("simplesh> ");
-
-    // Si el usuario ha escrito una orden, almacenarla en la historia.
-    if(buf)
-        add_history(buf);
-
-    return buf;
-}
 

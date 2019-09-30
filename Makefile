@@ -18,5 +18,6 @@ simplesh_syntactic.o: simplesh_syntactic.c simplesh_structs.o
 simplesh_structs.o: simplesh_structs.c
 
 clean:
-	#rm -rf *~ $(OBJECTS) $(TARGET) coreç
+	#rm -rf *~ $(OBJECTS) $(TARGET) core
+
 .PHONY: clean
