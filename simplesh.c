@@ -62,7 +62,7 @@ int main(int argc, char** argv)
     DPRINTF(DBG_TRACE, "STR\n");
 
     // Bucle de lectura y ejecución de órdenes
-    while ((buf = get_cmd()) != NULL)
+    while (!EXIT && (buf = get_cmd()) != NULL)
     {
         // Realiza el análisis sintáctico de la línea de órdenes
         cmd = parse_cmd(buf);

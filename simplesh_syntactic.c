@@ -1,3 +1,7 @@
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <pwd.h>
+#include <libgen.h>
 
 #include "simplesh_structs.c"
 
@@ -342,13 +346,13 @@ struct cmd* parse_redr(struct cmd* cmd, char** start_of_str, char* end_of_str)
         switch(delimiter)
         {
             case '<':
-                cmd = redrcmd(cmd, start_of_token, end_of_token, O_RDONLY, 0, STDIN_FILENO);
+                cmd = redrcmd(cmd, start_of_token, end_of_token, O_RDONLY, S_IRWXU, STDIN_FILENO);
                 break;
             case '>':
-                cmd = redrcmd(cmd, start_of_token, end_of_token, O_RDWR|O_CREAT, 0, STDOUT_FILENO);
+                cmd = redrcmd(cmd, start_of_token, end_of_token, O_RDWR|O_TRUNC|O_CREAT, S_IRWXU, STDOUT_FILENO);
                 break;
             case '+': // >>
-                cmd = redrcmd(cmd, start_of_token, end_of_token, O_RDWR|O_CREAT, 0, STDOUT_FILENO);
+                cmd = redrcmd(cmd, start_of_token, end_of_token, O_RDWR|O_APPEND|O_CREAT, S_IRWXU, STDOUT_FILENO);
                 break;
         }
     }
@@ -427,9 +431,20 @@ struct cmd* null_terminate(struct cmd* cmd)
 char* get_cmd()
 {
     char* buf;
+    const int PROMPT_STRING_SIZE = 300;
+    char prompt[PROMPT_STRING_SIZE];
+
+    uid_t uid = getuid();	// Obtenemos el uid del usuario
+    struct passwd* entry = getpwuid(uid); // Obtenemos la entrada del fichero /etc/passwd
+    //TODO comprobar errores de getpwuid y si hay que liberar memoria
+    int used_size = sprintf(prompt, "%s@", entry->pw_name);
+    getcwd(prompt+used_size, PROMPT_STRING_SIZE-used_size);
+    char* wd = basename(prompt+used_size);
+    //TODO comprobar errores de getcwd y si hay que liberar memoria (no parece)
+    sprintf(prompt+used_size, "%s> ", wd);
 
     // Lee la orden tecleada por el usuario
-    buf = readline("simplesh> ");
+    buf = readline(prompt);
 
     // Si el usuario ha escrito una orden, almacenarla en la historia.
     if(buf)
