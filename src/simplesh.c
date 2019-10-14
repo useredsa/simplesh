@@ -13,13 +13,16 @@
 
 // Modulos de estructuras, sintaxis y ejecucion
 
-#include "simplesh_execute.c"
+#include <unistd.h>
+#include <getopt.h>
 
+#include "simplesh_macros.h"
+#include "simplesh_syntactic.h"
+#include "simplesh_execute.h"
 
 /******************************************************************************
  * Bucle principal de `simplesh`
  ******************************************************************************/
-
 
 void help(char **argv)
 {

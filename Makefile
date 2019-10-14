@@ -1,23 +1,59 @@
-#!/usr/bin/make -f
+#
+# 'make'        build executable file
+# 'make clean'  removes all .o and executable files
+# 'make cleandep' deletes all .d files
+#
 
-TARGET=simplesh
+### Define according to folder structure ###
+INCDIR=include#	headers folder
+SRCDIR=src#		source folder/s and file extension
+BUILDDIR=build#	object files folder
+DEPDIR=build#	dependencies folder
+BINDIR=bin#		binaries folder
 
-CFLAGS=-ggdb3 -Wall -Werror -Wno-unused -std=c11
+#
+# This uses Suffix Replacement within a macro:
+#   $(name:string1=string2)
+#         For each word in 'name' replace 'string1' with 'string2'
+# Below we are replacing the suffix .c of all words in the macro SRCS
+# with the .o suffix
+#
+# define the C source files
+SRCS=$(shell find $(SRCDIR) -type f -name "*.c")
+# define the C object files 
+OBJS=$(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SRCS:.c=.o))
+# define the auto-generated dependency files
+DEPS=$(patsubst $(SRCDIR)/%,$(DEPDIR)/%,$(SRCS:.c=.d))
+
+### Define compiling process ###
+CC=gcc	# C compiler
+CFLAGS=-ggdb3 -Wall -Werror -Wno-unused -std=c11 # Compile-time flags
+INC=-I $(INCDIR)
+CPPFLAGS=CFLAGS
 LDLIBS=-lreadline
 
-#OBJECTS=$(patsubst %.c,%.o,$(wildcard *.c))
+# define the main files
+TARGET=$(BINDIR)/simplesh
 
-$(TARGET) : simplesh.o
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) $(OBJS) $(INC) $(LDLIBS) -o $(TARGET)
 
-simplesh.o: simplesh.c simplesh_execute.o 
+# Include dependencies files
+-include $(DEPS)
 
-simplesh_execute.o: simplesh_execute.c simplesh_syntactic.o
+# rule for .o files
+#$(BUILDDIR)/%.o: $(SRCDIR)/%.c
+#	$(CC) $(CFLAGS) $(INC) $(LDLIBS) -c $< -o $@
 
-simplesh_syntactic.o: simplesh_syntactic.c simplesh_structs.o
+# rule to generate a dep file by using the C preprocessor
+# (see man cpp for details on the -MM and -MT options)
+$(DEPDIR)/%.d: $(SRCDIR)/%.c
+	($(CPP) $(CFLAGS) $(INC) $(LDLIBS) $< -MM -MT $(@:.d=.o); echo '\t$(CC) $(CFLAGS) $(INC) $(LDLIBS) -c $< -o $(@:.d=.o)';) >$@
 
-simplesh_structs.o: simplesh_structs.c
+.PHONY: clean cleandep
 
 clean:
-	#rm -rf *~ $(OBJECTS) $(TARGET) core
+	rm -f $(OBJS) $(TARGET)
 
-.PHONY: clean
+cleandep:
+	rm -f $(DEPS)

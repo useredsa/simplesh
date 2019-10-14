@@ -1,4 +1,6 @@
-simplesh
-*.o
- 
+# Ignore the build dir with object files
+build/*
+
+# Ignore any executables
+bin/*
  

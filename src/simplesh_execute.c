@@ -1,11 +1,27 @@
+#include "simplesh_execute.h"
 
-//TODO add include guards in all files
-#include "simplesh_syntactic.c"
+#include <assert.h>
 #include <unistd.h>
+#include <errno.h>
+#include <stdlib.h>
+
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <pwd.h>
+#include <fcntl.h>
+
+#include "simplesh_macros.h"
 
 /******************************************************************************
  * Funciones para la ejecución de comandos internos
  ******************************************************************************/
+
+int EXIT = 0;
+
+int run_exit(struct execcmd* ecmd) {
+    EXIT = 1;
+    return 0;
+}
 
 int run_cwd(struct execcmd* ecmd) {
     static const int BUFFER_SIZE = 300;
@@ -16,13 +32,6 @@ int run_cwd(struct execcmd* ecmd) {
         return errno; //TODO is correct?
     }
     printf("cwd: %s\n", token);
-    return 0;
-}
-
-static int EXIT = 0;
-int run_exit(struct execcmd* ecmd) {
-    //TODO
-    EXIT = 1;
     return 0;
 }
 
@@ -326,66 +335,3 @@ void print_cmd(struct cmd* cmd) {
     }
 }
 
-void free_cmd(struct cmd* cmd) { //TODO move to simples_structs.c
-    struct execcmd* ecmd;
-    struct redrcmd* rcmd;
-    struct listcmd* lcmd;
-    struct pipecmd* pcmd;
-    struct backcmd* bcmd;
-    struct subscmd* scmd;
-
-    if (cmd == 0) return;
-
-    switch (cmd->type) {
-        case EXEC:
-            break;
-
-        case REDR:
-            rcmd = (struct redrcmd*)cmd;
-            free_cmd(rcmd->cmd);
-
-            //free(rcmd->cmd);
-            break;
-
-        case LIST:
-            lcmd = (struct listcmd*)cmd;
-
-            free_cmd(lcmd->left);
-            free_cmd(lcmd->right);
-
-            //free(lcmd->right);
-            //free(lcmd->left); //TODO ask if correct
-            break;
-
-        case PIPE:
-            pcmd = (struct pipecmd*)cmd;
-
-            free_cmd(pcmd->left);
-            free_cmd(pcmd->right);
-
-            // free(pcmd->right);
-            // free(pcmd->left);
-            break;
-
-        case BACK:
-            bcmd = (struct backcmd*)cmd;
-
-            free_cmd(bcmd->cmd);
-
-            // free(bcmd->cmd);
-            break;
-
-        case SUBS:
-            scmd = (struct subscmd*)cmd;
-
-            free_cmd(scmd->cmd);
-
-            // free(scmd->cmd);
-            break;
-
-        case INV:
-        default:
-            panic("%s: estructura `cmd` desconocida\n", __func__);
-    }
-    free(cmd);
-}
