@@ -1,4 +1,4 @@
-#include "simplesh_syntactic.h"
+#include "line_pars.h"
 
 #include <libgen.h>
 #include <string.h>
@@ -13,7 +13,7 @@
 // Biblioteca readline
 #include <readline/history.h>
 #include <readline/readline.h>
-#include "simplesh_macros.h"
+#include "macros.h"
 
 
 int get_token(char** start_of_str, char const* end_of_str,
@@ -265,7 +265,7 @@ struct cmd* parse_redr(struct cmd* cmd, char** start_of_str, char* end_of_str) {
         switch (delimiter) {
             case '<':
                 cmd = redrcmd(cmd, start_of_token, end_of_token, O_RDONLY,
-                              S_IRWXU, STDIN_FILENO);
+                              0, STDIN_FILENO);
                 break;
             case '>':
                 cmd =

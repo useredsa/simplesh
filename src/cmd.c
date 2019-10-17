@@ -1,10 +1,10 @@
-#include "simplesh_structs.h"
+#include "cmd.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "simplesh_macros.h"
+#include "macros.h"
 
 struct cmd* execcmd(void) {
     struct execcmd* cmd;

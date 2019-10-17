@@ -26,7 +26,7 @@ OBJS=$(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SRCS:.c=.o))
 DEPS=$(patsubst $(SRCDIR)/%,$(DEPDIR)/%,$(SRCS:.c=.d))
 
 ### Define compiling process ###
-CC=gcc	# C compiler
+CC=cc	# C compiler
 CFLAGS=-ggdb3 -Wall -Werror -Wno-unused -std=c11 # Compile-time flags
 INC=-I $(INCDIR)
 CPPFLAGS=CFLAGS

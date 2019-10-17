@@ -1,7 +1,7 @@
 #ifndef SIMPLESH_EXECUTE_H
 #define SIMPLESH_EXECUTE_H
-
-#include "simplesh_structs.h"
+// TODO redefine all ifndef
+#include "cmd.h"
 
 /******************************************************************************
  * Funciones para la ejecución de comandos internos

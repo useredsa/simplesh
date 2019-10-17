@@ -11,14 +11,13 @@
  * Convocatoria: FEBRERO/JUNIO/JULIO
  */
 
-// Modulos de estructuras, sintaxis y ejecucion
-
+#include "macros.h"
 #include <unistd.h>
 #include <getopt.h>
 
-#include "simplesh_macros.h"
-#include "simplesh_syntactic.h"
-#include "simplesh_execute.h"
+#include "line_pars.h"
+#include "cmd_exec.h"
+#include "sign_mgmt.h"
 
 /******************************************************************************
  * Bucle principal de `simplesh`
@@ -59,6 +58,8 @@ int main(int argc, char** argv)
 {
     char* buf;
     struct cmd* cmd;
+
+    set_sign_mgmt();
 
     parse_args(argc, argv);
 

@@ -1,16 +1,17 @@
-#include "simplesh_execute.h"
+#include "cmd_exec.h"
+#include "macros.h"
 
 #include <assert.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
-
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <pwd.h>
 #include <fcntl.h>
 
-#include "simplesh_macros.h"
+#include "psplit.h"
+#include "sign_mgmt.h"
 
 /******************************************************************************
  * Funciones para la ejecución de comandos internos
@@ -18,12 +19,14 @@
 
 int EXIT = 0;
 
-int run_exit(struct execcmd* ecmd) {
+int run_exit(char** argv, int argc) {
+    //TODO check arguments?
     EXIT = 1;
     return 0;
 }
 
-int run_cwd(struct execcmd* ecmd) {
+int run_cwd(char** argv, int argc) {
+    //TODO check arguments?
     static const int BUFFER_SIZE = 300;
     char buf[BUFFER_SIZE];
     char* token = getcwd(buf, BUFFER_SIZE);
@@ -35,15 +38,15 @@ int run_cwd(struct execcmd* ecmd) {
     return 0;
 }
 
-int run_cd(struct execcmd* ecmd) {
+int run_cd(char** argv, int argc) { //TODO setenv
     static const int BUFFER_SIZE = 300;
     static char OLDPWD[300] = "", buff[300]; //TODO no deja poner BUFFER_SIZE ahí
-    if (ecmd->argc > 2) {
+    if (argc > 2) {
         error("cwd: too many arguments");
         return 1; //TODO copied from bash
     }   
     char *dir;
-    if (ecmd->argc == 1) {
+    if (argc == 1) {
         char* buf;
         const int PROMPT_STRING_SIZE = 300;
         char prompt[PROMPT_STRING_SIZE];
@@ -62,15 +65,15 @@ int run_cd(struct execcmd* ecmd) {
             return errno;
         }
     } else {
-        if (strcmp(ecmd->argv[1], "-") == 0) {
+        if (strcmp(argv[1], "-") == 0) {
             if (strcmp(OLDPWD, "") == 0) {
-                error("cd: no older directory\n");
+                error("cd: no older directory\n"); //TODO buen manejo de los mensajes de error
                 return 1;
             }
             strcpy(buff, OLDPWD);
             dir = buff;
         } else {
-            dir = ecmd->argv[1];
+            dir = argv[1];
         }
     }
     getcwd(OLDPWD, BUFFER_SIZE);
@@ -82,18 +85,28 @@ int run_cd(struct execcmd* ecmd) {
     return 0;
 }
 
-static char inter_comm[][15] = {"cwd", "exit", "cd"};
-static int (*inter_func[])(struct execcmd*) = {run_cwd, run_exit, run_cd};
+static char inter_comms[][15] = {"cwd", "exit", "cd", "psplit"};
+static int (*inter_funcs[])(char** argv, int argc) = {run_cwd, run_exit, run_cd,
+                                                      run_psplit};
+int (*isInter(char *comm))(char **argv, int argc) {
+    for (int i = 0; i < sizeof(inter_comms) / sizeof(inter_comms[0]); i++)
+        if (strcmp(inter_comms[i], comm) == 0) return inter_funcs[i];
+    return NULL;
+}
 
 /******************************************************************************
  * Funciones para la ejecución de la línea de órdenes
  ******************************************************************************/
 
-int (*isInter(char* comm))(struct execcmd*) {
-    for (int i = 0; i < sizeof(inter_comm) / sizeof(inter_comm[0]); i++)
-        if (strcmp(inter_comm[i], comm) == 0) return inter_func[i];
-    return NULL;
-}
+/**
+ * @brief Check whether the function failed because the children
+ * wait was performed by the signal manager.
+ */
+#define TRY_AND_ACCEPT_ECHILD(x)    \
+    do {                            \
+        int __rc = (x);             \
+        if (__rc != ECHILD) TRY(__rc);\
+    } while (0)
 
 void exec_cmd(struct execcmd* ecmd) {
     assert(ecmd->type == EXEC);
@@ -113,7 +126,7 @@ void run_cmd(struct cmd* cmd) {
     struct pipecmd* pcmd;
     struct backcmd* bcmd;
     struct subscmd* scmd;
-    int p[2];
+    int p[2], pid[2];
     int fd;
 
     DPRINTF(DBG_TRACE, "STR\n");
@@ -124,40 +137,29 @@ void run_cmd(struct cmd* cmd) {
         case EXEC:
             ecmd = (struct execcmd*)cmd;
             if (ecmd->argc == 0) return; //TODO check necessity or deeper error
-            int (*func)(struct execcmd*) = isInter(ecmd->argv[0]);
+            int (*func)(char** argv, int argc) = isInter(ecmd->argv[0]);
             if (func != NULL) {
-                (*func)(ecmd);
+                (*func)(ecmd->argv, ecmd->argc);
             } else {
-                if (fork_or_panic("fork EXEC") == 0) {
+                if ((pid[0] = fork_or_panic("fork EXEC")) == 0) {
                     exec_cmd(ecmd);
                 }
-                TRY(wait(NULL));
+                TRY_AND_ACCEPT_ECHILD(waitpid(pid[0], NULL, 0));
             }
             break;
 
-        case REDR: //TODO do not use with internal commands
+        case REDR:
             rcmd = (struct redrcmd*)cmd;
-            if (fork_or_panic("fork REDR") == 0) {
+            TRY(fd = dup(rcmd->fd));
+            TRY(close(rcmd->fd));
+            if (open(rcmd->file, rcmd->flags, rcmd->mode) < 0) {
+                //TODO abortar misión
+            } else {
+                run_cmd(rcmd->cmd);
                 TRY(close(rcmd->fd));
-                if ((fd = open(rcmd->file, rcmd->flags, rcmd->mode)) < 0) {
-                    perror("open");
-                    exit(EXIT_FAILURE);
-                }
-
-                if (rcmd->cmd->type == EXEC) {
-                    ecmd = (struct execcmd*)rcmd->cmd;
-                    int (*func)(struct execcmd*) = isInter(ecmd->argv[0]);
-                    if (func != NULL) {
-                        (*func)(ecmd);
-                    } else {
-                        exec_cmd(ecmd);
-                    }
-                } else {
-                    run_cmd(rcmd->cmd);
-                }
-                exit(EXIT_SUCCESS);
+                TRY(dup(fd));
+                TRY(close(fd));
             }
-            TRY(wait(NULL));
             break;
 
         case LIST:
@@ -166,8 +168,7 @@ void run_cmd(struct cmd* cmd) {
             run_cmd(lcmd->right);
             break;
 
-        case PIPE: //TODO ambos procesos en subshells? Podemos evitar hacer hijos de más?
-        //TODO do not use with internal commands
+        case PIPE:
             pcmd = (struct pipecmd*)cmd;
             if (pipe(p) < 0) {
                 perror("pipe");
@@ -175,85 +176,47 @@ void run_cmd(struct cmd* cmd) {
             }
 
             // Ejecución del hijo de la izquierda
-            if (fork_or_panic("fork PIPE left") == 0) {
+            if ((pid[0] = fork_or_panic("fork PIPE left")) == 0) {
                 TRY(close(STDOUT_FILENO));
                 TRY(dup(p[1]));
                 TRY(close(p[0]));
                 TRY(close(p[1]));
-                if (pcmd->left->type == EXEC) {
-                    ecmd = (struct execcmd*)pcmd->left;
-                    int (*func)(struct execcmd*) = isInter(ecmd->argv[0]);
-                    if (func != NULL) {
-                        (*func)(ecmd);
-                    } else {
-                        exec_cmd(ecmd);
-                    }
-                    exec_cmd(ecmd);
-                } else {
-                    run_cmd(pcmd->left);
-                }
+                run_cmd(pcmd->left);
                 exit(EXIT_SUCCESS);
             }
 
             // Ejecución del hijo de la derecha
-            if (fork_or_panic("fork PIPE right") == 0) {
+            if ((pid[1] = fork_or_panic("fork PIPE right")) == 0) {
                 TRY(close(STDIN_FILENO));
                 TRY(dup(p[0]));
                 TRY(close(p[0]));
                 TRY(close(p[1]));
-                if (pcmd->right->type == EXEC) {
-                    ecmd = (struct execcmd*)pcmd->right;
-                    int (*func)(struct execcmd*) = isInter(ecmd->argv[0]);
-                    if (func != NULL) {
-                        (*func)(ecmd);
-                    } else {
-                        exec_cmd(ecmd);
-                    }
-                    exec_cmd(ecmd);
-                } else {
-                    run_cmd(pcmd->right);
-                }
+                run_cmd(pcmd->right);
                 exit(EXIT_SUCCESS);
             }
             TRY(close(p[0]));
             TRY(close(p[1]));
-
+            
             // Esperar a ambos hijos
-            TRY(wait(NULL));
-            TRY(wait(NULL));
+            TRY_AND_ACCEPT_ECHILD(waitpid(pid[0], NULL, 0));
+            TRY_AND_ACCEPT_ECHILD(waitpid(pid[1], NULL, 0));
             break;
 
-        case BACK:  // TODO como crear un subshell y no hacer un wait? podemos
-                    // evitar hacer hijos de más?
-                    // Aunque checkeemos el caso EXEC, se nos pasa el caso
-                    // redirección
-                    // TODO do not use with internal commands
+        case BACK:
             bcmd = (struct backcmd*)cmd;
-            if (fork_or_panic("fork BACK") == 0) {
-                if (bcmd->cmd->type == EXEC) {
-                    ecmd = (struct execcmd*)bcmd->cmd;
-                    int (*func)(struct execcmd*) = isInter(ecmd->argv[0]);
-                    if (func != NULL) {
-                        (*func)(ecmd);
-                    } else {
-                        exec_cmd(ecmd);
-                    }
-                    exec_cmd(ecmd);
-                } else {
-                    run_cmd(bcmd->cmd);
-                }
+            if ((pid[0] = fork_back_child()) == 0) {
+                run_cmd(bcmd->cmd);
                 exit(EXIT_SUCCESS);
-
             }
             break;
 
         case SUBS:
             scmd = (struct subscmd*)cmd;
-            if (fork_or_panic("fork SUBS") == 0) {
+            if ((pid[0] = fork_or_panic("fork SUBS")) == 0) {
                 run_cmd(scmd->cmd);
                 exit(EXIT_SUCCESS);
             }
-            TRY(wait(NULL));
+            TRY_AND_ACCEPT_ECHILD(waitpid(pid[0], NULL, 0));
             break;
 
         case INV:
@@ -334,4 +297,3 @@ void print_cmd(struct cmd* cmd) {
             panic("%s: estructura `cmd` desconocida\n", __func__);
     }
 }
-

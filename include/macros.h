@@ -1,14 +1,15 @@
 #ifndef SIMPLESH_MACROS_H
 #define SIMPLESH_MACROS_H
 
+#define _POSIX_C_SOURCE \
+    200809L /* IEEE 1003.1-2008 (véase /usr/include/features.h) */
+//#define NDEBUG                /* Traduce asertos y DMACROS a 'no ops' */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
-#define _POSIX_C_SOURCE \
-    200809L /* IEEE 1003.1-2008 (véase /usr/include/features.h) */
-//#define NDEBUG                /* Traduce asertos y DMACROS a 'no ops' */
 
 /******************************************************************************
  * Constantes, macros y variables globales
@@ -51,9 +52,18 @@ static int g_dbg_level = 0;
         }                                                                     \
     } while (0)
 
-/******************************************************************************
- * Funciones auxiliares
- ******************************************************************************/
+
+/* Macros de Impresión */
+
+#define INFO(fmt, ...)                                        \
+    do {                                                      \
+        fprintf(stdout, "%s: " fmt, __func__, ##__VA_ARGS__); \
+    } while (0)
+
+#define ERROR(fmt, ...)                                       \
+    do {                                                      \
+        fprintf(stderr, "%s: " fmt, __func__, ##__VA_ARGS__); \
+    } while (0)
 
 /**
  * @brief Imprime el mensaje

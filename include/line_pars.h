@@ -1,7 +1,7 @@
 #ifndef SIMPLESH_SYNTACTIC_H
 #define SIMPLESH_SYNTACTIC_H
 
-#include "simplesh_structs.h"
+#include "cmd.h"
 
 /******************************************************************************
  * Funciones para realizar el análisis sintáctico de la línea de órdenes
