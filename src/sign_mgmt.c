@@ -87,6 +87,7 @@ int run_bjobs(char **argv, int argc) {
             case 'h':
                 printf(
                     "Uso: bjobs [-k] [-h]\n"
+                    "     Opciones:\n"
                     "     -k Mata a todos los procesos en segundo plano.\n"
                     "     -h Ayuda\n\n");
                 return 0;

@@ -102,10 +102,10 @@ int (*isInter(char *comm))(char **argv, int argc) {
  * @brief Check whether the function failed because the children
  * wait was performed by the signal manager.
  */
-#define TRY_AND_ACCEPT_ECHILD(x)    \
-    do {                            \
-        int __rc = (x);             \
-        if (__rc != ECHILD) TRY(__rc);\
+#define TRY_AND_ACCEPT_ECHILD(x)       \
+    do {                               \
+        int __rt = (x);                \
+        if (__rt != ECHILD) TRY(__rt); \
     } while (0)
 
 void exec_cmd(struct execcmd* ecmd) {
@@ -136,7 +136,7 @@ void run_cmd(struct cmd* cmd) {
     switch (cmd->type) {
         case EXEC:
             ecmd = (struct execcmd*)cmd;
-            if (ecmd->argc == 0) return; //TODO check necessity or deeper error
+            if (ecmd->argc == 0) return; //TODO ask necessity or deeper error
             int (*func)(char** argv, int argc) = isInter(ecmd->argv[0]);
             if (func != NULL) {
                 (*func)(ecmd->argv, ecmd->argc);
@@ -153,13 +153,13 @@ void run_cmd(struct cmd* cmd) {
             TRY(fd = dup(rcmd->fd));
             TRY(close(rcmd->fd));
             if (open(rcmd->file, rcmd->flags, rcmd->mode) < 0) {
-                //TODO abortar misión
+                fprintf(stderr, "simplesh: Couldn't open file '%s' (%s)\n", rcmd->file, strerror(errno));
             } else {
                 run_cmd(rcmd->cmd);
                 TRY(close(rcmd->fd));
-                TRY(dup(fd));
-                TRY(close(fd));
             }
+            TRY(dup(fd));
+            TRY(close(fd));
             break;
 
         case LIST:
