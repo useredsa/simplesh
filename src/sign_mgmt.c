@@ -3,6 +3,7 @@
 
 #include <signal.h>
 #include <wait.h>
+#include <getopt.h>
 
 int nback_procs;
 int back_procs[MAX_BACK_CHLD];
@@ -67,4 +68,44 @@ void set_sign_mgmt() {
     sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
     TRY(sigemptyset(&sa.sa_mask));
     TRY(sigaction(SIGCHLD, &sa, 0));
+}
+
+
+int run_bjobs(char **argv, int argc) {
+    int optionk = 0;
+    int opt;
+    optind = 1;
+    while ((opt = getopt(argc, argv, "hk")) != -1) {
+        switch (opt) {
+            case 'k':
+                optionk = 1;
+                break;
+
+            default:
+            case '?':
+            case ':':
+            case 'h':
+                printf(
+                    "Uso: bjobs [-k] [-h]\n"
+                    "     -k Mata a todos los procesos en segundo plano.\n"
+                    "     -h Ayuda\n\n");
+                return 0;
+        }
+    }
+
+    if (optionk) {
+        for (int i = 0; i < MAX_BACK_CHLD; i++) {
+            if (back_procs[i] != 0) {
+                kill(back_procs[i], SIGTERM);
+            }
+        }
+        return 0;
+    }
+
+    for (int i = 0; i < MAX_BACK_CHLD; i++) {
+        if (back_procs[i] != 0) {
+            printf("[%d]\n", back_procs[i]);
+        }
+    }
+    return 0;
 }

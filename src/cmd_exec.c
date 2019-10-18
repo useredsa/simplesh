@@ -85,9 +85,9 @@ int run_cd(char** argv, int argc) { //TODO setenv
     return 0;
 }
 
-static char inter_comms[][15] = {"cwd", "exit", "cd", "psplit"};
+static char inter_comms[][15] = {"cwd", "exit", "cd", "psplit", "bjobs"};
 static int (*inter_funcs[])(char** argv, int argc) = {run_cwd, run_exit, run_cd,
-                                                      run_psplit};
+                                                      run_psplit, run_bjobs};
 int (*isInter(char *comm))(char **argv, int argc) {
     for (int i = 0; i < sizeof(inter_comms) / sizeof(inter_comms[0]); i++)
         if (strcmp(inter_comms[i], comm) == 0) return inter_funcs[i];
@@ -196,7 +196,7 @@ void run_cmd(struct cmd* cmd) {
             }
             TRY(close(p[0]));
             TRY(close(p[1]));
-            
+
             // Esperar a ambos hijos
             TRY_AND_ACCEPT_ECHILD(waitpid(pid[0], NULL, 0));
             TRY_AND_ACCEPT_ECHILD(waitpid(pid[1], NULL, 0));
@@ -213,6 +213,7 @@ void run_cmd(struct cmd* cmd) {
         case SUBS:
             scmd = (struct subscmd*)cmd;
             if ((pid[0] = fork_or_panic("fork SUBS")) == 0) {
+                //TODO ask about clear_back_list
                 run_cmd(scmd->cmd);
                 exit(EXIT_SUCCESS);
             }
