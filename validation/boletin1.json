@@ -3,7 +3,7 @@
         "desc": "B1r1",
         "shell": "simplesh",
         "prompt": "root@.*> ",
-        "timeout": 3,
+        "timeout": 6,
         "cmds": [
             "touch f1",
             "touch f2",

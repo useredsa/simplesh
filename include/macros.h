@@ -52,6 +52,15 @@ static int g_dbg_level = 0;
         }                                                                     \
     } while (0)
 
+/**
+ * @brief Check whether the function failed because the children
+ * wait was performed by the signal manager.
+ */
+#define TRY_AND_ACCEPT_ECHILD(x)        \
+    do {                                \
+        int __rt = (x);                 \
+        if (__rt < 0 && errno != ECHILD) TRY(__rt); \
+    } while (0)
 
 /* Macros de Impresión */
 

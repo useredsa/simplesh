@@ -5,7 +5,6 @@
 #include <wait.h>
 #include <getopt.h>
 
-int nback_procs;
 int back_procs[MAX_BACK_CHLD];
 
 void handle_sigchld(int sig) {
@@ -16,7 +15,6 @@ void handle_sigchld(int sig) {
             if (back_procs[i] == pid) {
                 printf("[%d]\n", pid);
                 back_procs[i] = 0;
-                nback_procs--;
                 break;
             }
         }
@@ -30,17 +28,24 @@ void clear_back_list() {
     }
 }
 
+int fork_subshell() {
+    int pid;
+    pid = fork_or_panic("fork SUBS");
+    if (pid == 0) {
+        clear_back_list();
+    }
+    return pid;
+}
+
 int fork_back_child() {
     for (int i = 0; i < MAX_BACK_CHLD; i++) {
         if (back_procs[i] == 0) {
             TRY(back_procs[i] = fork_or_panic("fork BACK"));
-            nback_procs++;
             if (back_procs[i] != 0)
                 printf("[%d]\n", back_procs[i]);
             return back_procs[i];
         }
     }
-    //TODO ask if good solution
     perror("Maximum number of background process reached\n");
     return -1;
 }

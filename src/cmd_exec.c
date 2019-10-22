@@ -9,6 +9,7 @@
 #include <sys/wait.h>
 #include <pwd.h>
 #include <fcntl.h>
+#include <dirent.h>
 
 #include "psplit.h"
 #include "sign_mgmt.h"
@@ -89,6 +90,7 @@ static char inter_comms[][15] = {"cwd", "exit", "cd", "psplit", "bjobs"};
 static int (*inter_funcs[])(char** argv, int argc) = {run_cwd, run_exit, run_cd,
                                                       run_psplit, run_bjobs};
 int (*isInter(char *comm))(char **argv, int argc) {
+    if (comm == NULL) return NULL;
     for (int i = 0; i < sizeof(inter_comms) / sizeof(inter_comms[0]); i++)
         if (strcmp(inter_comms[i], comm) == 0) return inter_funcs[i];
     return NULL;
@@ -98,19 +100,9 @@ int (*isInter(char *comm))(char **argv, int argc) {
  * Funciones para la ejecución de la línea de órdenes
  ******************************************************************************/
 
-/**
- * @brief Check whether the function failed because the children
- * wait was performed by the signal manager.
- */
-#define TRY_AND_ACCEPT_ECHILD(x)       \
-    do {                               \
-        int __rt = (x);                \
-        if (__rt != ECHILD) TRY(__rt); \
-    } while (0)
-
 void exec_cmd(struct execcmd* ecmd) {
     assert(ecmd->type == EXEC);
-
+    // Si no hay comando:
     if (ecmd->argv[0] == NULL) exit(EXIT_SUCCESS);
 
     execvp(ecmd->argv[0], ecmd->argv);
@@ -136,7 +128,6 @@ void run_cmd(struct cmd* cmd) {
     switch (cmd->type) {
         case EXEC:
             ecmd = (struct execcmd*)cmd;
-            if (ecmd->argc == 0) return; //TODO ask necessity or deeper error
             int (*func)(char** argv, int argc) = isInter(ecmd->argv[0]);
             if (func != NULL) {
                 (*func)(ecmd->argv, ecmd->argc);
@@ -212,8 +203,7 @@ void run_cmd(struct cmd* cmd) {
 
         case SUBS:
             scmd = (struct subscmd*)cmd;
-            if ((pid[0] = fork_or_panic("fork SUBS")) == 0) {
-                //TODO ask about clear_back_list
+            if ((pid[0] = fork_subshell("fork SUBS")) == 0) {
                 run_cmd(scmd->cmd);
                 exit(EXIT_SUCCESS);
             }

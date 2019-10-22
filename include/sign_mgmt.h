@@ -10,6 +10,11 @@
 int fork_back_child();
 
 /**
+ * @brief Crea un subshell, limpiándole la lista de procesos en segundo plano.
+ */
+int fork_subshell();
+
+/**
  * @brief Determina el comportamiento del proceso ante las señales.
  */
 void set_sign_mgmt();

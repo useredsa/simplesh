@@ -139,6 +139,7 @@ void divide_in_bytes(char *basename) {
         // the file
         while (available > bsize || (available > 0 && r == 0)) {
             if (canWrite == 0) {
+                TRY(fsync(outfd));
                 TRY(close(outfd));
                 TRY(outfd = create_sub_file(basename, ++numFile));
                 canWrite = length;
@@ -154,6 +155,7 @@ void divide_in_bytes(char *basename) {
             buffer[i] = buffer[i + off];
         }
     } while (r > 0);
+    TRY(fsync(outfd));
     TRY(close(outfd));
 }
 
@@ -171,6 +173,7 @@ void divide_in_lines(char *basename) {
         // the file
         while (available > bsize || (available > 0 && r == 0)) {
             if (canWrite == 0) {
+                TRY(fsync(outfd));
                 TRY(close(outfd));
                 TRY(outfd = create_sub_file(basename, ++numFile));
                 canWrite = length;
@@ -198,6 +201,7 @@ void divide_in_lines(char *basename) {
             buffer[i] = buffer[i + off];
         }
     } while (r > 0);
+    TRY(fsync(outfd));
     TRY(close(outfd));
 }
 
@@ -253,6 +257,6 @@ int run_psplit(char **argv, int argc) {
         }    
         exit(0);
     }
-    waitpid(pid, 0, 0);
+    TRY_AND_ACCEPT_ECHILD(waitpid(pid, 0, 0));
     return 0;
 }
