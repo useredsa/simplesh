@@ -344,12 +344,17 @@ char* get_cmd() {
     uid_t uid = getuid();  // Obtenemos el uid del usuario
     struct passwd* entry =
         getpwuid(uid);  // Obtenemos la entrada del fichero /etc/passwd
-    // TODO comprobar errores de getpwuid y si hay que liberar memoria
-    int used_size = sprintf(prompt, "%s@", entry->pw_name);
-    getcwd(prompt + used_size, PROMPT_STRING_SIZE - used_size);
-    char* wd = basename(prompt + used_size);
-    // TODO comprobar errores de getcwd y si hay que liberar memoria (no parece)
-    sprintf(prompt + used_size, "%s> ", wd);
+    if (entry != NULL) {
+        int used_size = sprintf(prompt, "%s@", entry->pw_name);
+        if (getcwd(prompt + used_size, PROMPT_STRING_SIZE - used_size) != NULL) {
+            char* wd = basename(prompt + used_size);
+            sprintf(prompt + used_size, "%s> ", wd);
+        } else {
+            sprintf(prompt, "simplesh_error@>");
+        }
+    } else {
+        sprintf(prompt, "simplesh_error@>");
+    }
 
     // Lee la orden tecleada por el usuario
     buf = readline(prompt);

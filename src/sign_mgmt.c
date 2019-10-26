@@ -2,10 +2,14 @@
 #include "macros.h"
 
 #include <signal.h>
+#include <unistd.h>
 #include <wait.h>
 #include <getopt.h>
 
 int back_procs[MAX_BACK_CHLD];
+
+char buf[300];
+char *buf_top = buf+300;
 
 void handle_sigchld(int sig) {
     int old_errno = errno;
@@ -13,7 +17,19 @@ void handle_sigchld(int sig) {
     while ((pid = waitpid((pid_t) -1, 0, WNOHANG)) > 0) {
         for (int i = 0; i < MAX_BACK_CHLD; i++) {
             if (back_procs[i] == pid) {
-                printf("[%d]\n", pid);
+                char* c = buf_top;
+                *(--c) = '\n';
+                *(--c) = ']';
+                while (pid > 0) {
+                    *(--c) = '0'+(char)(pid%10);
+                    pid/=10;
+                }
+                *(--c) = '[';
+                while (c < buf_top) {
+                    int r = write(1, c, (buf_top-c)/sizeof(buf[0]));
+                    TRY(r);
+                    c+=r;
+                }
                 back_procs[i] = 0;
                 break;
             }

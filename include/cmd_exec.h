@@ -1,6 +1,7 @@
-#ifndef SIMPLESH_EXECUTE_H
-#define SIMPLESH_EXECUTE_H
-// TODO redefine all ifndef
+#ifndef SIMPLESH_CMD_H
+#define SIMPLESH_CMD_H
+
+#include "macros.h"
 #include "cmd.h"
 
 /******************************************************************************

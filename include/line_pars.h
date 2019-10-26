@@ -1,5 +1,5 @@
-#ifndef SIMPLESH_SYNTACTIC_H
-#define SIMPLESH_SYNTACTIC_H
+#ifndef SIMPLESH_PARS_H
+#define SIMPLESH_PARS_H
 
 #include "cmd.h"
 

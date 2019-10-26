@@ -1,10 +1,8 @@
 #include "cmd_exec.h"
-#include "macros.h"
 
 #include <assert.h>
 #include <unistd.h>
 #include <errno.h>
-#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <pwd.h>
@@ -21,30 +19,27 @@
 int EXIT = 0;
 
 int run_exit(char** argv, int argc) {
-    //TODO check arguments?
     EXIT = 1;
     return 0;
 }
 
-int run_cwd(char** argv, int argc) {
-    //TODO check arguments?
-    static const int BUFFER_SIZE = 300;
-    char buf[BUFFER_SIZE];
-    char* token = getcwd(buf, BUFFER_SIZE);
+#define BUFFER_SIZE 300
+char buff[BUFFER_SIZE];
+
+int cwd(char** argv, int argc) {
+    char* token = getcwd(buff, BUFFER_SIZE);
     if (token == NULL) {
-        error("cwd: couldn't get current working directory: errno %d (%s)", errno, strerror(errno));
-        return errno; //TODO is correct?
+        ERROR("%s\n", strerror(errno));
+        return -1;
     }
-    printf("cwd: %s\n", token);
+    INFO("%s\n", token);
     return 0;
 }
 
-int run_cd(char** argv, int argc) { //TODO setenv
-    static const int BUFFER_SIZE = 300;
-    static char OLDPWD[300] = "", buff[300]; //TODO no deja poner BUFFER_SIZE ahí
+int run_cd(char** argv, int argc) {
     if (argc > 2) {
-        error("cwd: too many arguments");
-        return 1; //TODO copied from bash
+        ERROR("too many arguments\n");
+        return 1;
     }   
     char *dir;
     if (argc == 1) {
@@ -57,37 +52,40 @@ int run_cd(char** argv, int argc) { //TODO setenv
         // ¡No liberar la estructura devuelta por getpwuid con free!
         struct passwd* entry = getpwuid(uid);
         if (entry == NULL) {
-            error("cd: couldn't locate the home directory");
-            return errno; //TODO checkear si es correcto (tbn abajo 2 veces)
+            ERROR("%s\n", strerror(errno));
+            return -1;
         }
         dir = entry->pw_dir;
         if (dir == NULL) {
-            error("cd: couldn't locate the home directory");
-            return errno;
+            ERROR("couldn't locate the home directory\n");
+            return -1;
         }
     } else {
         if (strcmp(argv[1], "-") == 0) {
-            if (strcmp(OLDPWD, "") == 0) {
-                error("cd: no older directory\n"); //TODO buen manejo de los mensajes de error
-                return 1;
+            char* oldPath = getenv("OLDPWD");
+            if (oldPath == NULL) {
+                ERROR("Variable OLDPWD no definida\n");
+                return -1;
             }
-            strcpy(buff, OLDPWD);
-            dir = buff;
+            dir = oldPath;
         } else {
             dir = argv[1];
         }
     }
-    getcwd(OLDPWD, BUFFER_SIZE);
+    char* token = getcwd(buff, BUFFER_SIZE);
     if (chdir(dir) == -1) {
-        error("cd: couldn't change current directory to %s: errno %d (%s)",
-              dir, errno, strerror(errno));
-        return errno;
+        ERROR("%s\n", strerror(errno));
+        return -1;
     }
+    if (token != NULL) {
+        TRY(setenv("OLDPWD", token, 1));
+    }
+
     return 0;
 }
 
 static char inter_comms[][15] = {"cwd", "exit", "cd", "psplit", "bjobs"};
-static int (*inter_funcs[])(char** argv, int argc) = {run_cwd, run_exit, run_cd,
+static int (*inter_funcs[])(char** argv, int argc) = {cwd, run_exit, run_cd,
                                                       run_psplit, run_bjobs};
 int (*isInter(char *comm))(char **argv, int argc) {
     if (comm == NULL) return NULL;
