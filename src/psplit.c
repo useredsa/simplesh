@@ -229,7 +229,7 @@ int run_psplit(char **argv, int argc) {
         while (optind < argc) {
             if (created >= procs) {
                 // int status; // for use with wait to control return value
-                TRY(wait(0));
+                TRY_AND_ACCEPT_ECHILD(wait(0));
                 // if (status != 0)
                 //     return_stat = status;
                 created--;
@@ -250,7 +250,7 @@ int run_psplit(char **argv, int argc) {
         }
         while (created > 0) {
             // int status; // for use with wait to control return value
-            TRY(wait(0));
+            TRY_AND_ACCEPT_ECHILD(wait(0));
             // if (status != 0)
             //     return_stat = status;
             created--;
