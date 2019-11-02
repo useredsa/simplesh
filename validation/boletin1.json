@@ -2,8 +2,8 @@
     "setup": {
         "desc": "B1r1",
         "shell": "simplesh",
-        "prompt": "simplesh> ",
-        "timeout": 3,
+        "prompt": "root@.*> ",
+        "timeout": 6,
         "cmds": [
             "touch f1",
             "touch f2",

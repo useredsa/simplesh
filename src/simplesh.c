@@ -11,15 +11,17 @@
  * Convocatoria: FEBRERO/JUNIO/JULIO
  */
 
-// Modulos de estructuras, sintaxis y ejecucion
+#include "macros.h"
+#include <unistd.h>
+#include <getopt.h>
 
-#include "simplesh_execute.c"
-
+#include "line_pars.h"
+#include "cmd_exec.h"
+#include "sign_mgmt.h"
 
 /******************************************************************************
  * Bucle principal de `simplesh`
  ******************************************************************************/
-
 
 void help(char **argv)
 {
@@ -57,12 +59,14 @@ int main(int argc, char** argv)
     char* buf;
     struct cmd* cmd;
 
+    set_sign_mgmt();
+
     parse_args(argc, argv);
 
     DPRINTF(DBG_TRACE, "STR\n");
 
     // Bucle de lectura y ejecución de órdenes
-    while ((buf = get_cmd()) != NULL)
+    while (!EXIT && (buf = get_cmd()) != NULL)
     {
         // Realiza el análisis sintáctico de la línea de órdenes
         cmd = parse_cmd(buf);
